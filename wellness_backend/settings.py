@@ -124,5 +124,3 @@ CACHES = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
-
-USDA_API_KEY = os.getenv('USDA_API_KEY', 'DEMO_KEY')

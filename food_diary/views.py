@@ -30,12 +30,12 @@ class FoodSearchView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _search_usda(self, query):
-        """Поиск через USDA FoodData Central (бесплатный)"""
-        url = 'https://api.nal.usda.gov/fdc/v1/foods/search'
+        """Поиск через Open Food Facts (бесплатный, без API ключа)"""
+        url = 'https://world.openfoodfacts.org/cgi/search.pl'
         params = {
-            'api_key': settings.USDA_API_KEY,
-            'query': query,
-            'pageSize': 10,
+            'search_terms': query,
+            'page_size': 10,
+            'json': 1,
         }
         
         response = requests.get(url, params=params, timeout=10)
@@ -43,15 +43,15 @@ class FoodSearchView(APIView):
         data = response.json()
         
         results = []
-        for item in data.get('foods', []):
-            nutrients = {n['nutrientName']: n.get('value', 0) for n in item.get('foodNutrients', [])}
+        for item in data.get('products', []):
+            nutrients = item.get('nutriments', {})
             results.append({
-                'name': item.get('description', ''),
-                'calories': nutrients.get('Energy', 0),
-                'protein': nutrients.get('Protein', 0),
-                'carbs': nutrients.get('Carbohydrate, by difference', 0),
-                'fat': nutrients.get('Total lipid (fat)', 0),
-                'external_id': str(item.get('fdcId', '')),
+                'name': item.get('product_name', item.get('product_name_en', 'Unknown')),
+                'calories': nutrients.get('energy-kcal_100g', 0),
+                'protein': nutrients.get('proteins_100g', 0),
+                'carbs': nutrients.get('carbohydrates_100g', 0),
+                'fat': nutrients.get('fat_100g', 0),
+                'external_id': item.get('code', ''),
             })
         return results
 
