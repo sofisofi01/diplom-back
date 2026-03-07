@@ -1,7 +1,7 @@
 # Wellness Backend - Инструкция по запуску
 
 ## Требования
-- Python 3.8+
+- Python 3.8-3.12 (Python 3.13 пока не полностью поддерживается)
 - PostgreSQL 12+
 - Redis 6+
 
