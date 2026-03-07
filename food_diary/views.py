@@ -22,6 +22,47 @@ class FoodSearchView(APIView):
         if cached_result:
             return Response(cached_result)
 
+        provider = getattr(settings, 'FOOD_API_PROVIDER', 'usda')
+        
+        try:
+            if provider == 'usda':
+                results = self._search_usda(query)
+            else:
+                results = self._search_edamam(query)
+            
+            CacheService.set_food_search_cache(query, results)
+            return Response(results)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _search_usda(self, query):
+        """Поиск через USDA FoodData Central (бесплатный)"""
+        url = 'https://api.nal.usda.gov/fdc/v1/foods/search'
+        params = {
+            'api_key': getattr(settings, 'USDA_API_KEY', 'DEMO_KEY'),
+            'query': query,
+            'pageSize': 10,
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        results = []
+        for item in data.get('foods', []):
+            nutrients = {n['nutrientName']: n.get('value', 0) for n in item.get('foodNutrients', [])}
+            results.append({
+                'name': item.get('description', ''),
+                'calories': nutrients.get('Energy', 0),
+                'protein': nutrients.get('Protein', 0),
+                'carbs': nutrients.get('Carbohydrate, by difference', 0),
+                'fat': nutrients.get('Total lipid (fat)', 0),
+                'external_id': str(item.get('fdcId', '')),
+            })
+        return results
+
+    def _search_edamam(self, query):
+        """Поиск через Edamam API"""
         url = 'https://api.edamam.com/api/food-database/v2/parser'
         params = {
             'app_id': settings.EDAMAM_APP_ID,
@@ -29,28 +70,23 @@ class FoodSearchView(APIView):
             'ingr': query,
         }
 
-        try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            results = []
-            for item in data.get('hints', [])[:10]:
-                food = item.get('food', {})
-                nutrients = food.get('nutrients', {})
-                results.append({
-                    'name': food.get('label', ''),
-                    'calories': nutrients.get('ENERC_KCAL', 0),
-                    'protein': nutrients.get('PROCNT', 0),
-                    'carbs': nutrients.get('CHOCDF', 0),
-                    'fat': nutrients.get('FAT', 0),
-                    'external_id': food.get('foodId', ''),
-                })
-            
-            CacheService.set_food_search_cache(query, results)
-            return Response(results)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        results = []
+        for item in data.get('hints', [])[:10]:
+            food = item.get('food', {})
+            nutrients = food.get('nutrients', {})
+            results.append({
+                'name': food.get('label', ''),
+                'calories': nutrients.get('ENERC_KCAL', 0),
+                'protein': nutrients.get('PROCNT', 0),
+                'carbs': nutrients.get('CHOCDF', 0),
+                'fat': nutrients.get('FAT', 0),
+                'external_id': food.get('foodId', ''),
+            })
+        return results
 
 
 class FoodDiaryEntryListCreateView(generics.ListCreateAPIView):

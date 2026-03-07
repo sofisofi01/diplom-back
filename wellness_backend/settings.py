@@ -125,5 +125,7 @@ CACHES = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+FOOD_API_PROVIDER = os.getenv('FOOD_API_PROVIDER', 'usda')
+USDA_API_KEY = os.getenv('USDA_API_KEY', 'DEMO_KEY')
 EDAMAM_APP_ID = os.getenv('EDAMAM_APP_ID', '')
 EDAMAM_APP_KEY = os.getenv('EDAMAM_APP_KEY', '')
