@@ -36,11 +36,12 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./deploy
+      dockerfile: Dockerfile.nginx
     ports:
       - "80:80"
     volumes:
-      - /home/wellness/diplom-back/deploy/nginx.conf:/etc/nginx/conf.d/default.conf
       - staticfiles:/app/staticfiles
       - media:/app/media
     depends_on:
