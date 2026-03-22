@@ -104,6 +104,7 @@ jobs:
         script: |
           cd /home/wellness/diplom-back
           git pull origin main
+          docker compose -f docker-compose.prod.yml down
           docker compose -f docker-compose.prod.yml build
           docker compose -f docker-compose.prod.yml up -d
           docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
