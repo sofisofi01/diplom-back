@@ -46,22 +46,7 @@ services:
       - media:/app/media
     depends_on:
       - web
-    networks:
-      - wellness_network
     restart: always
-
-
-  certbot:
-    image: certbot/certbot
-    networks:
-      - wellness_network
-    volumes:
-      - certbot_www:/var/www/certbot
-      - certbot_conf:/etc/letsencrypt
-
-networks:
-  wellness_network:
-    driver: bridge
 
 volumes:
   postgres_data:
