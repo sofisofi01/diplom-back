@@ -10,5 +10,6 @@ redis==5.0.1
 django-redis==5.4.0
 Pillow==11.0.0
 gunicorn==21.2.0
+uvicorn==0.24.0
 flake8==6.1.0
 setuptools>=65.5.1
