@@ -1,15 +1,51 @@
-# Wellness Backend - Инструкция по запуску
+# Wellness Backend API
 
-## Требования
-- Python 3.8-3.12 (Python 3.13 пока не полностью поддерживается)
-- PostgreSQL 12+
-- Redis 6+
+Проект Wellness — это бэкенд-система для отслеживания здоровья, питания и физической активности.
 
-## Установка
+## 🚀 Деплой и доступ
 
-### 1. Клонирование и настройка окружения
+Приложение развернуто на VPS сервере и доступно по следующим адресам:
+
+*   **IP сервера**: `72.56.6.10`
+*   **Админ-панель**: [http://72.56.6.10/admin/](http://72.56.6.10/admin/)
+*   **Документация API (Swagger)**: [http://72.56.6.10/api/docs/](http://72.56.6.10/api/docs/)
+*   **Redoc**: [http://72.56.6.10/api/redoc/](http://72.56.6.10/api/redoc/)
+
+## 🛠 Технологический стек
+
+*   **Framework**: Django 4.2 + Django REST Framework
+*   **Database**: PostgreSQL 14
+*   **Cache/Task Queue**: Redis 7
+*   **Web Server**: Nginx + Uvicorn (ASGI)
+*   **Containerization**: Docker & Docker Compose
+*   **CI/CD**: GitHub Actions
+
+## 📖 Документация API
+
+Для генерации документации используется `drf-spectacular`. В Swagger UI поддерживается авторизация через JWT (Bearer Token).
+
+1. Перейдите в `/api/docs/`.
+2. Нажмите кнопку **Authorize**.
+3. Введите ваш JWT токен в формате: `Bearer <your_token>`.
+
+## 💻 Разработка и деплой
+
+### CI/CD Pipeline
+При каждом пуше в ветку `main` автоматически запускается процесс:
+1. Проверка кода (Linting).
+2. Запуск тестов.
+3. Деплой на сервер через SSH.
+4. Сборка Docker-образов и применение миграций.
+
+### Локальный запуск
 ```bash
-git clone <repository-url>
+docker-compose up --build
+```
+
+### Создание суперпользователя на сервере
+```bash
+docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+```
 cd wellness-backend
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
