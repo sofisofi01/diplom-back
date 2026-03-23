@@ -46,16 +46,5 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    def set_password(self, raw_password):
-        if raw_password:
-            self.password = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        else:
-            self.password = None
-
-    def check_password(self, raw_password):
-        if not self.password:
-            return False
-        return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
-
     def __str__(self):
         return self.email
