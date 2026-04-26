@@ -97,15 +97,13 @@ jobs:
     - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        passphrase: ${{ secrets.VPS_PASSPHRASE }}
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
-          cd /home/wellness/diplom-back
+          cd /home/user/wellness
           git pull origin main
-          docker compose -f docker-compose.prod.yml down
-          docker compose -f docker-compose.prod.yml build
-          docker compose -f docker-compose.prod.yml up -d
+          docker compose -f docker-compose.prod.yml up -d --build
           docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
           docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+          docker image prune -f
