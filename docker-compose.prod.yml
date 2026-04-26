@@ -54,6 +54,10 @@ services:
       - frontend
     restart: always
 
+  frontend:
+    image: sofisofi01/aegle-frontend:latest
+    restart: always
+
   certbot:
     image: certbot/certbot
     volumes:
