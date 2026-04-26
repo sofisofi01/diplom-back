@@ -47,15 +47,19 @@ services:
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
     depends_on:
       - web
       - frontend
     restart: always
 
-  frontend:
-    image: sofisofi01/aegle-frontend:latest
-    restart: always
-    # Фронтенд не требует volumes, так как статика внутри образа
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
 
 volumes:
   postgres_data:
