@@ -56,7 +56,7 @@ services:
     restart: always
 
   frontend:
-    image: sofisofi01/aegle-frontend:latest
+    image: ${IMAGE_FRONTEND:-sofisofi01/aegle-frontend:latest}
     restart: always
 
   certbot:
