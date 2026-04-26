@@ -97,9 +97,10 @@ jobs:
     - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        passphrase: ${{ secrets.VPS_PASSPHRASE }}
         script: |
           cd /home/user/wellness
           git pull origin main
