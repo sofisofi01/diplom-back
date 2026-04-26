@@ -69,6 +69,26 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         from profiles.models import Profile
+        profile_data = validated_data.pop('profile', {})
+        
+        # Обновляем поля самого пользователя
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Обновляем поля профиля
+        profile, _ = Profile.objects.get_or_create(user=instance)
+        if 'height' in profile_data: profile.height = profile_data['height']
+        if 'current_weight' in profile_data: profile.current_weight = profile_data['current_weight']
+        if 'gender' in profile_data: profile.gender = profile_data['gender']
+        if 'age' in profile_data: profile.age = profile_data['age']
+        profile.save()
+
+        return instance
+
+
+    def update(self, instance, validated_data):
+        from profiles.models import Profile
         
         # Данные профиля
         height = validated_data.pop('height', None)
