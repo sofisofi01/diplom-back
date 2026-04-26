@@ -53,7 +53,7 @@ services:
     restart: always
 
   frontend:
-    image: aegle/aegle-frontend:latest
+    image: sofisofi01/aegle-frontend:latest
     restart: always
     # Фронтенд не требует volumes, так как статика внутри образа
 
