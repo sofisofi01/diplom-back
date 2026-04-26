@@ -49,12 +49,12 @@ services:
       - media:/app/media
     depends_on:
       - web
-      - frontend
+      # - frontend
     restart: always
 
-  frontend:
-    image: your-docker-username/wellness-frontend:latest
-    restart: always
+  # frontend:
+  #   image: your-docker-username/wellness-frontend:latest
+  #   restart: always
     # Фронтенд не требует volumes, так как статика внутри образа
 
 volumes:
