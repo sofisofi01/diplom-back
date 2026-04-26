@@ -56,16 +56,40 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    height = serializers.FloatField(source='profile.height', read_only=True)
-    weight = serializers.FloatField(source='profile.current_weight', read_only=True)
-    gender = serializers.CharField(source='profile.gender', read_only=True)
-    age = serializers.IntegerField(source='profile.age', read_only=True)
+    height = serializers.FloatField(source='profile.height', required=False)
+    weight = serializers.FloatField(source='profile.current_weight', required=False)
+    gender = serializers.CharField(source='profile.gender', required=False)
+    age = serializers.IntegerField(source='profile.age', required=False)
 
     class Meta:
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'avatar', 'created_at', 
                   'height', 'weight', 'gender', 'age')
         read_only_fields = ('id', 'created_at')
+
+    def update(self, instance, validated_data):
+        from profiles.models import Profile
+        
+        # Данные профиля
+        height = validated_data.pop('height', None)
+        weight = validated_data.pop('weight', None)
+        gender = validated_data.pop('gender', None)
+        age = validated_data.pop('age', None)
+
+        # Обновляем поля пользователя
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Обновляем или создаем профиль
+        profile, created = Profile.objects.get_or_create(user=instance)
+        if height is not None: profile.height = height
+        if weight is not None: profile.current_weight = weight
+        if gender is not None: profile.gender = 'M' if gender == 'male' else 'F'
+        if age is not None: profile.age = age
+        profile.save()
+
+        return instance
 
 
 class LoginSerializer(serializers.Serializer):
