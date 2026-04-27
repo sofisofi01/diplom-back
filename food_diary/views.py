@@ -23,14 +23,85 @@ class FoodSearchView(APIView):
             return Response(cached_result)
         
         try:
-            results = self._search_usda(query)
+            results = self._search_fatsecret(query)
             CacheService.set_food_search_cache(query, results)
             return Response(results)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"FatSecret error: {e}")
+            # Fallback to Open Food Facts if FatSecret fails
+            results = self._search_openfoodfacts(query)
+            return Response(results)
 
-    def _search_usda(self, query):
-        """Поиск через Open Food Facts (бесплатный, без API ключа)"""
+    def _get_fatsecret_token(self):
+        client_id = "54512519bd6f4cb782c1fcac2a830b34"
+        client_secret = "08ad367f97584812ac14d7307d776b74"
+        
+        url = "https://oauth.fatsecret.com/connect/token"
+        data = {
+            'grant_type': 'client_credentials',
+            'scope': 'basic'
+        }
+        
+        response = requests.post(url, data=data, auth=(client_id, client_secret))
+        response.raise_for_status()
+        return response.json().get('access_token')
+
+    def _search_fatsecret(self, query):
+        token = self._get_fatsecret_token()
+        url = "https://platform.fatsecret.com/rest/server.api"
+        
+        params = {
+            'method': 'foods.search',
+            'search_expression': query,
+            'format': 'json',
+            'max_results': 10
+        }
+        
+        headers = {
+            'Authorization': f'Bearer {token}'
+        }
+        
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        foods = data.get('foods', {}).get('food', [])
+        if isinstance(foods, dict): # FatSecret returns a dict if only one result
+            foods = [foods]
+            
+        results = []
+        for item in foods:
+            # FatSecret returns description string like "Per 100g - Calories: 52kcal | Fat: 0.17g | Carbs: 13.81g | Protein: 0.26g"
+            desc = item.get('food_description', '')
+            calories = 0
+            protein = 0
+            carbs = 0
+            fat = 0
+            
+            try:
+                if 'Calories:' in desc:
+                    calories = float(desc.split('Calories:')[1].split('kcal')[0].strip())
+                if 'Fat:' in desc:
+                    fat = float(desc.split('Fat:')[1].split('g')[0].strip())
+                if 'Carbs:' in desc:
+                    carbs = float(desc.split('Carbs:')[1].split('g')[0].strip())
+                if 'Protein:' in desc:
+                    protein = float(desc.split('Protein:')[1].split('g')[0].strip())
+            except:
+                pass
+
+            results.append({
+                'name': item.get('food_name'),
+                'calories': calories,
+                'protein': protein,
+                'carbs': carbs,
+                'fat': fat,
+                'external_id': item.get('food_id'),
+                'image_url': item.get('food_image')
+            })
+        return results
+
+    def _search_openfoodfacts(self, query):
         url = 'https://world.openfoodfacts.org/cgi/search.pl'
         params = {
             'search_terms': query,
@@ -52,6 +123,7 @@ class FoodSearchView(APIView):
                 'carbs': nutrients.get('carbohydrates_100g', 0),
                 'fat': nutrients.get('fat_100g', 0),
                 'external_id': item.get('code', ''),
+                'image_url': item.get('image_url')
             })
         return results
 
