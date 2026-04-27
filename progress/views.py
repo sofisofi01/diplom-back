@@ -6,7 +6,7 @@ from django.db.models import Avg
 from datetime import datetime, timedelta
 from .models import WeightEntry, GoalProgress
 from .serializers import WeightEntrySerializer, GoalProgressSerializer
-from food_diary.models import FoodDiaryEntry
+from food_diary.models import NutritionEntry
 
 
 class WeightEntryListCreateView(generics.ListCreateAPIView):
@@ -61,15 +61,15 @@ class ProgressAnalyticsView(APIView):
         weight_entries = WeightEntry.objects.filter(user=user, date__gte=start_date).order_by('date')
         weight_data = [{'date': entry.date, 'weight': entry.weight} for entry in weight_entries]
         
-        food_entries = FoodDiaryEntry.objects.filter(user=user, date__gte=start_date)
+        food_entries = NutritionEntry.objects.filter(nutrition_day__plan__user=user)
         daily_calories = {}
         for entry in food_entries:
-            date_str = str(entry.date)
-            if date_str not in daily_calories:
-                daily_calories[date_str] = 0
-            daily_calories[date_str] += entry.total_calories()
+            # Так как NutritionEntry привязаны к дням недели, а не к датам,
+            # мы пока не можем точно сопоставить их с календарем аналитики.
+            # Временно используем заглушку или пропускаем.
+            pass
         
-        calories_data = [{'date': date, 'calories': calories} for date, calories in daily_calories.items()]
+        calories_data = []
         
         profile = getattr(user, 'profile', None)
         target_weight = profile.target_weight if profile else None
