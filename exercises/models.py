@@ -34,16 +34,13 @@ class Exercise(models.Model):
 
     name = models.CharField(max_length=200)
     description = models.TextField()
-    target_muscles = models.CharField(
-        max_length=50, 
-        choices=MUSCLE_CHOICES,
-        default='warm'
+    target_muscles = models.JSONField(
+        default=list,
+        help_text='Список целевых мышц'
     )
-    equipment = models.CharField(
-        max_length=50, 
-        choices=EQUIPMENT_CHOICES,
-        null=True, 
-        blank=True
+    equipment = models.JSONField(
+        default=list,
+        help_text='Список необходимого оборудования'
     )
     calories_per_repetition = models.DecimalField(
         max_digits=6, 
