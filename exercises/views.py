@@ -44,10 +44,60 @@ class WorkoutDayListCreateView(generics.ListCreateAPIView):
         return WorkoutDay.objects.filter(plan_id=plan_id, plan__user=self.request.user)
 
 
-class WorkoutExerciseListCreateView(generics.ListCreateAPIView):
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+
+class ActiveWorkoutPlanView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        plan = WorkoutPlan.objects.filter(user=request.user, is_active=True).first()
+        if not plan:
+            # Создаем план по умолчанию, если его нет
+            plan = WorkoutPlan.objects.create(
+                user=request.user,
+                name="My Workout Plan",
+                is_active=True
+            )
+            # Создаем 7 дней
+            for i in range(1, 8):
+                WorkoutDay.objects.create(plan=plan, day_number=i, name=f"Day {i}")
+        
+        serializer = WorkoutPlanSerializer(plan)
+        return Response(serializer.data)
+
+class AddExerciseToPlanView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        day_number = request.data.get('day_number')
+        exercise_id = request.data.get('exercise_id')
+        sets = request.data.get('sets', 3)
+        reps = request.data.get('reps', 10)
+
+        plan = WorkoutPlan.objects.filter(user=request.user, is_active=True).first()
+        if not plan:
+            return Response({"error": "No active plan found"}, status=status.HTTP_404_NOT_FOUND)
+
+        workout_day = get_object_or_404(WorkoutDay, plan=plan, day_number=day_number)
+        exercise = get_object_or_404(Exercise, id=exercise_id)
+
+        workout_exercise = WorkoutExercise.objects.create(
+            workout_day=workout_day,
+            exercise=exercise,
+            sets=sets,
+            reps=reps,
+            order=workout_day.exercises.count()
+        )
+
+        return Response(WorkoutExerciseSerializer(workout_exercise).data, status=status.HTTP_201_CREATED)
+
+class WorkoutExerciseDetailView(generics.DestroyAPIView):
+    queryset = WorkoutExercise.objects.all()
     serializer_class = WorkoutExerciseSerializer
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        day_id = self.kwargs.get('day_id')
-        return WorkoutExercise.objects.filter(workout_day_id=day_id, workout_day__plan__user=self.request.user)
+        return WorkoutExercise.objects.filter(workout_day__plan__user=self.request.user)

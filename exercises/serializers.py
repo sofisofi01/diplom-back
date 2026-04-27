@@ -5,16 +5,17 @@ from .models import Exercise, WorkoutPlan, WorkoutDay, WorkoutExercise
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
-        fields = ('id', 'name', 'description', 'target_muscles', 'difficulty', 'image', 'video_url')
+        fields = ('id', 'name', 'description', 'target_muscles', 'equipment', 'calories_per_repetition', 'difficulty', 'image', 'video_url')
 
 
 class WorkoutExerciseSerializer(serializers.ModelSerializer):
     exercise = ExerciseSerializer(read_only=True)
     exercise_id = serializers.IntegerField(write_only=True)
+    total_calories = serializers.ReadOnlyField()
 
     class Meta:
         model = WorkoutExercise
-        fields = ('id', 'exercise', 'exercise_id', 'sets', 'reps', 'weight', 'rest_seconds', 'order')
+        fields = ('id', 'exercise', 'exercise_id', 'sets', 'reps', 'weight', 'rest_seconds', 'order', 'total_calories')
 
 
 class WorkoutDaySerializer(serializers.ModelSerializer):
