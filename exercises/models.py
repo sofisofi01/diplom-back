@@ -9,9 +9,47 @@ class Exercise(models.Model):
         ('advanced', 'Продвинутый'),
     ]
 
+    MUSCLE_CHOICES = [
+        ('deltoid', 'Deltoid'),
+        ('abs', 'Abs'),
+        ('chest', 'Chest'),
+        ('legs', 'Legs'),
+        ('back', 'Back muscles'),
+        ('hands', 'Hands'),
+        ('trapezoid', 'Trapezoid'),
+        ('cardio', 'Cardio'),
+        ('warm', 'Warm'),
+    ]
+
+    EQUIPMENT_CHOICES = [
+        ('dumbbells', 'Dumbbells'),
+        ('kettlebell', 'Kettlebell'),
+        ('jump_rope', 'Jump rope'),
+        ('resistance_band', 'Resistance band'),
+        ('mat', 'Mat'),
+        ('weights', 'Weights'),
+        ('barbell', 'Barbell'),
+        ('horizontal_bar', 'Horizontal bar'),
+    ]
+
     name = models.CharField(max_length=200)
     description = models.TextField()
-    target_muscles = models.CharField(max_length=200)
+    target_muscles = models.CharField(
+        max_length=50, 
+        choices=MUSCLE_CHOICES,
+        default='warm'
+    )
+    equipment = models.CharField(
+        max_length=50, 
+        choices=EQUIPMENT_CHOICES,
+        null=True, 
+        blank=True
+    )
+    calories_per_repetition = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        default=0.0
+    )
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES)
     image = models.ImageField(upload_to='exercises/', null=True, blank=True)
     video_url = models.URLField(null=True, blank=True)
@@ -57,6 +95,12 @@ class WorkoutExercise(models.Model):
 
     class Meta:
         ordering = ['order']
+
+    @property
+    def total_calories(self):
+        if self.exercise.calories_per_repetition:
+            return float(self.exercise.calories_per_repetition) * self.reps * self.sets
+        return 0.0
 
     def __str__(self):
         return f"{self.exercise.name} - {self.sets}x{self.reps}"
