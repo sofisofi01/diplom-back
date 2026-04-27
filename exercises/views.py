@@ -94,7 +94,7 @@ class AddExerciseToPlanView(APIView):
 
         return Response(WorkoutExerciseSerializer(workout_exercise).data, status=status.HTTP_201_CREATED)
 
-class WorkoutExerciseDetailView(generics.DestroyAPIView):
+class WorkoutExerciseDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = WorkoutExercise.objects.all()
     serializer_class = WorkoutExerciseSerializer
     permission_classes = (IsAuthenticated,)
