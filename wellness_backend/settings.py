@@ -140,3 +140,8 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://xn--80abcyabjk1czh.xn--p1ai',
+    'http://xn--80abcyabjk1czh.xn--p1ai',
+]
