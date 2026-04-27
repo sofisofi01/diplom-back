@@ -19,4 +19,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        return Response(serializer.data)
+        
+        # Получаем обновленный объект, чтобы вернуть актуальные калории
+        instance.refresh_from_db()
+        return Response(self.get_serializer(instance).data)
