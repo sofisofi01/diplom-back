@@ -128,47 +128,6 @@ class FoodSearchView(APIView):
         return results
 
 
-class FoodDiaryEntryListCreateView(generics.ListCreateAPIView):
-    serializer_class = FoodDiaryEntrySerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        queryset = FoodDiaryEntry.objects.filter(user=self.request.user)
-        date = self.request.query_params.get('date')
-        if date:
-            queryset = queryset.filter(date=date)
-        return queryset
-
-
-class FoodDiaryEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = FoodDiaryEntrySerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        return FoodDiaryEntry.objects.filter(user=self.request.user)
-
-
-class DailyCaloriesSummaryView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        date = request.query_params.get('date', datetime.now().date())
-        entries = FoodDiaryEntry.objects.filter(user=request.user, date=date)
-        
-        total_calories = sum(entry.total_calories() for entry in entries)
-        
-        by_meal = {}
-        for meal_type, _ in FoodDiaryEntry.MEAL_CHOICES:
-            meal_entries = entries.filter(meal_type=meal_type)
-            by_meal[meal_type] = sum(entry.total_calories() for entry in meal_entries)
-        
-        return Response({
-            'date': date,
-            'total_calories': total_calories,
-            'by_meal': by_meal,
-        })
-
-
 from .models import FoodItem, NutritionPlan, NutritionDay, NutritionEntry
 from .serializers import FoodItemSerializer, NutritionPlanSerializer, NutritionEntrySerializer
 from django.shortcuts import get_object_or_404
