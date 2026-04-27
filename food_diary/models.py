@@ -3,6 +3,7 @@ from django.conf import settings
 
 
 class FoodItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='custom_food_items')
     name = models.CharField(max_length=200)
     calories = models.FloatField()
     protein = models.FloatField(default=0)

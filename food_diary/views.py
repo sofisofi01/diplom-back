@@ -188,3 +188,17 @@ class NutritionEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return NutritionEntry.objects.filter(nutrition_day__plan__user=self.request.user)
+
+class CreateFoodItemView(generics.CreateAPIView):
+    serializer_class = FoodItemSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class UserFoodItemListView(generics.ListAPIView):
+    serializer_class = FoodItemSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return FoodItem.objects.filter(user=self.request.user)
