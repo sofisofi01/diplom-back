@@ -99,5 +99,6 @@ class WorkoutExerciseDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = WorkoutExerciseSerializer
     permission_classes = (IsAuthenticated,)
 
+
     def get_queryset(self):
         return WorkoutExercise.objects.filter(workout_day__plan__user=self.request.user)

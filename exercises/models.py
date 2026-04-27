@@ -89,6 +89,7 @@ class WorkoutExercise(models.Model):
     weight = models.FloatField(null=True, blank=True, help_text='Вес в кг')
     rest_seconds = models.IntegerField(default=60)
     order = models.IntegerField(default=0)
+    is_completed = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['order']
