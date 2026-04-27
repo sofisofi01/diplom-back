@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import FoodItem, FoodDiaryEntry
+from .models import FoodItem, NutritionPlan, NutritionDay, NutritionEntry
 
 
 class FoodItemSerializer(serializers.ModelSerializer):
@@ -8,16 +8,23 @@ class FoodItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'calories', 'protein', 'carbs', 'fat', 'serving_size')
 
 
-class FoodDiaryEntrySerializer(serializers.ModelSerializer):
-    food_item = FoodItemSerializer(read_only=True)
-    food_item_id = serializers.IntegerField(write_only=True)
-    total_calories = serializers.FloatField(read_only=True)
+class NutritionEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NutritionEntry
+        fields = ('id', 'food_name', 'calories', 'protein', 'carbs', 'fat', 'meal_type', 'is_eaten', 'image_url')
+
+
+class NutritionDaySerializer(serializers.ModelSerializer):
+    entries = NutritionEntrySerializer(many=True, read_only=True)
 
     class Meta:
-        model = FoodDiaryEntry
-        fields = ('id', 'food_item', 'food_item_id', 'meal_type', 'servings', 'date', 'total_calories', 'created_at')
-        read_only_fields = ('id', 'created_at')
+        model = NutritionDay
+        fields = ('id', 'day_number', 'name', 'entries')
 
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
+
+class NutritionPlanSerializer(serializers.ModelSerializer):
+    days = NutritionDaySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = NutritionPlan
+        fields = ('id', 'name', 'is_active', 'days', 'created_at')

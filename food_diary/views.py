@@ -97,6 +97,63 @@ class DailyCaloriesSummaryView(APIView):
         })
 
 
-class CreateFoodItemView(generics.CreateAPIView):
-    serializer_class = FoodItemSerializer
+from .models import FoodItem, NutritionPlan, NutritionDay, NutritionEntry
+from .serializers import FoodItemSerializer, NutritionPlanSerializer, NutritionEntrySerializer
+from django.shortcuts import get_object_or_404
+
+
+class ActiveNutritionPlanView(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        plan = NutritionPlan.objects.filter(user=request.user, is_active=True).first()
+        if not plan:
+            plan = NutritionPlan.objects.create(user=request.user)
+            for i in range(1, 8):
+                day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                NutritionDay.objects.create(plan=plan, day_number=i, name=day_names[i-1])
+        
+        serializer = NutritionPlanSerializer(plan)
+        return Response(serializer.data)
+
+
+class AddFoodToPlanView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        day_number = request.data.get('day_number')
+        meal_type = request.data.get('meal_type')
+        food_name = request.data.get('food_name')
+        calories = request.data.get('calories', 0)
+        protein = request.data.get('protein', 0)
+        carbs = request.data.get('carbs', 0)
+        fat = request.data.get('fat', 0)
+        image_url = request.data.get('image_url')
+
+        plan = NutritionPlan.objects.filter(user=request.user, is_active=True).first()
+        if not plan:
+            return Response({"error": "No active plan found"}, status=status.HTTP_404_NOT_FOUND)
+
+        nutrition_day = get_object_or_404(NutritionDay, plan=plan, day_number=day_number)
+
+        entry = NutritionEntry.objects.create(
+            nutrition_day=nutrition_day,
+            food_name=food_name,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+            meal_type=meal_type,
+            image_url=image_url
+        )
+
+        return Response(NutritionEntrySerializer(entry).data, status=status.HTTP_201_CREATED)
+
+
+class NutritionEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = NutritionEntry.objects.all()
+    serializer_class = NutritionEntrySerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return NutritionEntry.objects.filter(nutrition_day__plan__user=self.request.user)
