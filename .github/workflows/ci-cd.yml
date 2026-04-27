@@ -58,7 +58,9 @@ jobs:
         DATABASE_HOST: localhost
         DATABASE_PORT: 5432
         REDIS_URL: redis://localhost:6379/1
-      run: python manage.py migrate
+      run: |
+        python manage.py makemigrations
+        python manage.py migrate
 
     - name: Run tests
       env:
@@ -105,6 +107,7 @@ jobs:
           cd /root/wellness
           git pull origin main
           docker compose -f docker-compose.prod.yml up -d --build
+          docker compose -f docker-compose.prod.yml exec -T web python manage.py makemigrations
           docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
           docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
           docker image prune -f
