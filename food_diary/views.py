@@ -191,6 +191,8 @@ class AddFoodToPlanView(APIView):
         carbs = request.data.get('carbs', 0)
         fat = request.data.get('fat', 0)
         image_url = request.data.get('image_url')
+        ingredients = request.data.get('ingredients')
+        recipe = request.data.get('recipe')
 
         plan = NutritionPlan.objects.filter(user=request.user, is_active=True).first()
         if not plan:
@@ -206,7 +208,9 @@ class AddFoodToPlanView(APIView):
             carbs=carbs,
             fat=fat,
             meal_type=meal_type,
-            image_url=image_url
+            image_url=image_url,
+            ingredients=ingredients,
+            recipe=recipe
         )
 
         return Response(NutritionEntrySerializer(entry).data, status=status.HTTP_201_CREATED)

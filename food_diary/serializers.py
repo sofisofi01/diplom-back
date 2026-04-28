@@ -10,7 +10,7 @@ class FoodItemSerializer(serializers.ModelSerializer):
 class NutritionEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = NutritionEntry
-        fields = ('id', 'food_name', 'calories', 'protein', 'carbs', 'fat', 'meal_type', 'is_eaten', 'image_url', 'ingredients')
+        fields = ('id', 'food_name', 'calories', 'protein', 'carbs', 'fat', 'meal_type', 'is_eaten', 'image_url', 'ingredients', 'recipe')
 
 
 class NutritionDaySerializer(serializers.ModelSerializer):
