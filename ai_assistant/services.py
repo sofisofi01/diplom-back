@@ -1,56 +1,121 @@
+import requests
+import json
+import uuid
+import os
+
 class AIAssistantService:
     @staticmethod
+    def get_gigachat_token():
+        """Получение токена авторизации GigaChat"""
+        url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+        
+        # Эти данные должны быть в .env, пока используем заглушку для структуры
+        auth_data = os.getenv('GIGACHAT_CREDENTIALS', 'YOUR_GIGACHAT_CREDENTIALS_BASE64')
+        
+        payload = {'scope': 'GIGACHAT_API_PERS'}
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'Authorization': f'Basic {auth_data}',
+            'RqUID': str(uuid.uuid4())
+        }
+
+        try:
+            # verify=False так как у Сбера часто самоподписанные сертификаты в API
+            response = requests.post(url, headers=headers, data=payload, verify=False)
+            return response.json().get('access_token')
+        except Exception as e:
+            print(f"GigaChat Auth Error: {e}")
+            return None
+
+    @staticmethod
     def analyze_user_data(user_data):
+        token = AIAssistantService.get_gigachat_token()
+        
         profile = user_data.get('profile', {})
         nutrition = user_data.get('nutrition', [])
         workouts = user_data.get('workouts', [])
         
+        # Формируем контекст для нейросети
+        context = f"""
+        User Profile:
+        - Current Weight: {profile.get('current_weight')}kg
+        - Target Weight: {profile.get('target_weight')}kg
+        - Goal: {profile.get('goal')}
+        
+        Nutrition Data (last plan):
+        {json.dumps(nutrition, indent=2)}
+        
+        Workout Data:
+        {json.dumps(workouts, indent=2)}
+        """
+
+        if not token:
+            # Fallback к локальной логике, если API недоступно
+            return AIAssistantService.local_fallback_analysis(user_data)
+
+        url = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
+        
+        prompt = {
+            "model": "GigaChat",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Ты — профессиональный фитнес-тренер и нутрициолог. Проанализируй данные пользователя и дай краткую сводку, детальный анализ и 3 конкретных рекомендации. Ответ верни СТРОГО в формате JSON с полями: summary, detailed_analysis, recommendations (массив строк), status."
+                },
+                {
+                    "role": "user",
+                    "content": f"Проанализируй мои данные: {context}"
+                }
+            ],
+            "temperature": 0.7
+        }
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {token}'
+        }
+
+        try:
+            response = requests.post(url, headers=headers, data=json.dumps(prompt), verify=False)
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+            
+            # Пытаемся распарсить JSON из ответа нейросети
+            try:
+                return json.loads(content)
+            except:
+                # Если нейросеть вернула текст вместо JSON, оборачиваем его
+                return {
+                    "summary": "Анализ готов",
+                    "detailed_analysis": content,
+                    "recommendations": ["Следуйте советам выше"],
+                    "status": "On Track"
+                }
+        except Exception as e:
+            print(f"GigaChat API Error: {e}")
+            return AIAssistantService.local_fallback_analysis(user_data)
+
+    @staticmethod
+    def local_fallback_analysis(user_data):
+        # Наша старая добрая локальная логика на случай сбоя API
+        profile = user_data.get('profile', {})
         target_weight = profile.get('target_weight')
         current_weight = profile.get('current_weight')
         
-        analysis_parts = []
-        
-        # Анализ веса
+        analysis_parts = ["Локальный анализ (API временно недоступен):"]
         if target_weight and current_weight:
             diff = current_weight - target_weight
-            if diff > 0:
-                analysis_parts.append(f"You are {diff:.1f}kg away from your goal. Your current progress is visible, but consistency in nutrition is key.")
-            elif diff < 0:
-                analysis_parts.append(f"You are {abs(diff):.1f}kg below your target. Ensure you are consuming enough calories for healthy maintenance or muscle growth.")
-            else:
-                analysis_parts.append("You have reached your target weight! Excellent work on maintaining your goals.")
-        
-        # Анализ питания
-        total_meals = sum(len(day.get('entries', [])) for day in nutrition)
-        if total_meals == 0:
-            analysis_parts.append("You haven't logged any meals in your current plan. Tracking your food intake will help me provide more accurate advice.")
-        else:
-            eaten_meals = sum(1 for day in nutrition for entry in day.get('entries', []) if entry.get('is_eaten'))
-            if eaten_meals > 0:
-                analysis_parts.append(f"You've logged {eaten_meals} meals as eaten. This data helps in tracking your actual calorie intake.")
-            else:
-                analysis_parts.append("You have a nutrition plan, but haven't marked any meals as eaten yet.")
-            
-        # Анализ тренировок
-        if not workouts:
-            analysis_parts.append("I don't see any active workout plans. Regular physical activity is crucial for both physical and mental well-being.")
-        else:
-            analysis_parts.append(f"You have an active workout plan with {len(workouts)} days of exercises. Make sure to balance intensity with recovery.")
-            
-        detailed_analysis = "\n\n".join(analysis_parts)
-        
-        recommendations = [
-            "Drink at least 2 liters of water daily to support metabolism.",
-            "Prioritize 7-8 hours of sleep for optimal recovery.",
-            "Include more fiber-rich vegetables in your lunch and dinner."
-        ]
-        
-        if not workouts:
-            recommendations.append("Start with 20-minute light walks daily.")
+            analysis_parts.append(f"До цели осталось {diff:.1f} кг.")
         
         return {
-            "summary": "Your journey is unique. Based on your current data, you are making progress, but there's room for optimization in tracking and consistency.",
-            "detailed_analysis": detailed_analysis,
-            "recommendations": recommendations,
-            "status": "Analyzing" if not total_meals else "On Track"
+            "summary": "Ваш прогресс анализируется локально.",
+            "detailed_analysis": "\n\n".join(analysis_parts),
+            "recommendations": [
+                "Пейте больше воды",
+                "Соблюдайте режим сна",
+                "Не пропускайте тренировки"
+            ],
+            "status": "On Track"
         }
