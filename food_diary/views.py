@@ -55,9 +55,16 @@ class FoodSearchView(APIView):
             'scope': 'basic'
         }
         
-        response = requests.post(url, data=data, auth=(client_id, client_secret))
-        response.raise_for_status()
-        return response.json().get('access_token')
+        print(f"DEBUG: Requesting FatSecret token from {url}")
+        try:
+            response = requests.post(url, data=data, auth=(client_id, client_secret))
+            response.raise_for_status()
+            token = response.json().get('access_token')
+            print(f"DEBUG: FatSecret token received successfully (starts with: {token[:10]}...)")
+            return token
+        except Exception as e:
+            print(f"ERROR: FatSecret Auth failed: {str(e)}")
+            raise
 
     def _search_fatsecret(self, query):
         token = self._get_fatsecret_token()
@@ -76,45 +83,53 @@ class FoodSearchView(APIView):
             'Authorization': f'Bearer {token}'
         }
         
-        response = requests.get(url, params=params, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        
-        foods = data.get('foods', {}).get('food', [])
-        if isinstance(foods, dict): # FatSecret returns a dict if only one result
-            foods = [foods]
+        print(f"DEBUG: Searching FatSecret for query: '{query}'")
+        try:
+            response = requests.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            data = response.json()
             
-        results = []
-        for item in foods:
-            # FatSecret returns description string like "Per 100g - Calories: 52kcal | Fat: 0.17g | Carbs: 13.81g | Protein: 0.26g"
-            desc = item.get('food_description', '')
-            calories = 0
-            protein = 0
-            carbs = 0
-            fat = 0
+            print(f"DEBUG: FatSecret raw response: {json.dumps(data, ensure_ascii=False)[:500]}...")
             
-            try:
-                if 'Calories:' in desc:
-                    calories = float(desc.split('Calories:')[1].split('kcal')[0].strip())
-                if 'Fat:' in desc:
-                    fat = float(desc.split('Fat:')[1].split('g')[0].strip())
-                if 'Carbs:' in desc:
-                    carbs = float(desc.split('Carbs:')[1].split('g')[0].strip())
-                if 'Protein:' in desc:
-                    protein = float(desc.split('Protein:')[1].split('g')[0].strip())
-            except:
-                pass
+            foods = data.get('foods', {}).get('food', [])
+            if isinstance(foods, dict):
+                foods = [foods]
+            
+            print(f"DEBUG: Found {len(foods)} food items in FatSecret")
+            
+            results = []
+            for item in foods:
+                desc = item.get('food_description', '')
+                calories = 0
+                protein = 0
+                carbs = 0
+                fat = 0
+                
+                try:
+                    if 'Calories:' in desc:
+                        calories = float(desc.split('Calories:')[1].split('kcal')[0].strip())
+                    if 'Fat:' in desc:
+                        fat = float(desc.split('Fat:')[1].split('g')[0].strip())
+                    if 'Carbs:' in desc:
+                        carbs = float(desc.split('Carbs:')[1].split('g')[0].strip())
+                    if 'Protein:' in desc:
+                        protein = float(desc.split('Protein:')[1].split('g')[0].strip())
+                except:
+                    pass
 
-            results.append({
-                'name': item.get('food_name'),
-                'calories': calories,
-                'protein': protein,
-                'carbs': carbs,
-                'fat': fat,
-                'external_id': item.get('food_id'),
-                'image_url': item.get('food_image')
-            })
-        return results
+                results.append({
+                    'name': item.get('food_name'),
+                    'calories': calories,
+                    'protein': protein,
+                    'carbs': carbs,
+                    'fat': fat,
+                    'external_id': item.get('food_id'),
+                    'image_url': item.get('food_image')
+                })
+            return results
+        except Exception as e:
+            print(f"ERROR: FatSecret Search failed: {str(e)}")
+            raise
 
     def _search_openfoodfacts(self, query):
         url = 'https://world.openfoodfacts.org/cgi/search.pl'
