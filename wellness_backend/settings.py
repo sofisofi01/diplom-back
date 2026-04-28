@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'food_diary',
     'exercises',
     'progress',
+    'ai_assistant',
 ]
 
 MIDDLEWARE = [
