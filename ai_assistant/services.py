@@ -35,6 +35,7 @@ class AIAssistantService:
         profile = user_data.get('profile', {})
         nutrition = user_data.get('nutrition', [])
         workouts = user_data.get('workouts', [])
+        weight_history = user_data.get('weight_history', [])
         
         # Формируем контекст для нейросети
         context = f"""
@@ -42,6 +43,9 @@ class AIAssistantService:
         - Current Weight: {profile.get('current_weight')}kg
         - Target Weight: {profile.get('target_weight')}kg
         - Goal: {profile.get('goal')}
+        
+        Weight History (last entries):
+        {json.dumps(weight_history, indent=2)}
         
         Nutrition Data (last plan):
         {json.dumps(nutrition, indent=2)}

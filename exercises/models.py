@@ -96,9 +96,18 @@ class WorkoutExercise(models.Model):
 
     @property
     def total_calories(self):
-        if self.exercise.calories_per_repetition:
-            return float(self.exercise.calories_per_repetition) * self.reps * self.sets
-        return 0.0
+        # Базовый расход на одно повторение (если не задано, берем 0.1 ккал как среднее)
+        base_calories = float(self.exercise.calories_per_repetition) if self.exercise.calories_per_repetition else 0.1
+        
+        # Коэффициент веса отягощения
+        weight_factor = 1.0
+        if self.weight:
+            # Каждые 10 кг веса добавляют примерно 5% к интенсивности
+            weight_factor = 1.0 + (self.weight / 200.0)
+            
+        # Если это кардио (обычно reps > 30 или target_muscles содержит cardio), 
+        # то reps может считаться как секунды. Но для простоты пока считаем по повторам.
+        return round(base_calories * self.reps * self.sets * weight_factor, 2)
 
     def __str__(self):
         return f"{self.exercise.name} - {self.sets}x{self.reps}"

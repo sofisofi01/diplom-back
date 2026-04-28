@@ -6,6 +6,8 @@ from food_diary.models import NutritionPlan
 from food_diary.serializers import NutritionPlanSerializer
 from exercises.models import WorkoutPlan
 from exercises.serializers import WorkoutPlanSerializer
+from progress.models import WeightEntry
+from progress.serializers import WeightEntrySerializer
 
 class AIAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
@@ -20,6 +22,10 @@ class AIAnalysisView(APIView):
         # Собираем данные о тренировках
         workout_plan = WorkoutPlan.objects.filter(user=user, is_active=True).first()
         workout_data = WorkoutPlanSerializer(workout_plan).data if workout_plan else []
+
+        # Собираем историю веса (последние 10 записей)
+        weight_entries = WeightEntry.objects.filter(user=user).order_by('-date')[:10]
+        weight_history = WeightEntrySerializer(weight_entries, many=True).data
         
         user_data = {
             'profile': {
@@ -28,7 +34,8 @@ class AIAnalysisView(APIView):
                 'goal': getattr(user.profile, 'goal', None),
             },
             'nutrition': nutrition_data.get('days', []) if isinstance(nutrition_data, dict) else [],
-            'workouts': workout_data.get('days', []) if isinstance(workout_data, dict) else []
+            'workouts': workout_data.get('days', []) if isinstance(workout_data, dict) else [],
+            'weight_history': weight_history
         }
         
         analysis = AIAssistantService.analyze_user_data(user_data)
