@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 from datetime import datetime
 import requests
+import json
 from .models import FoodItem, NutritionPlan, NutritionDay, NutritionEntry
 from .serializers import FoodItemSerializer, NutritionPlanSerializer, NutritionEntrySerializer
 from wellness_backend.cache_service import CacheService
