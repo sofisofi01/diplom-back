@@ -67,7 +67,9 @@ class FoodSearchView(APIView):
             'method': 'foods.search',
             'search_expression': query,
             'format': 'json',
-            'max_results': 10
+            'max_results': 10,
+            'region': 'RU',
+            'language': 'ru'
         }
         
         headers = {
