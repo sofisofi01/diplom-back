@@ -11,6 +11,11 @@ class FoodItem(models.Model):
     fat = models.FloatField(default=0)
     serving_size = models.CharField(max_length=100)
     external_id = models.CharField(max_length=200, null=True, blank=True)
+    meal_type = models.CharField(max_length=20, default="Breakfast")
+    ingredients = models.TextField(blank=True, null=True)
+    recipe = models.TextField(blank=True, null=True)
+    cooking_time = models.IntegerField(default=15)
+    image_url = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -55,6 +60,7 @@ class NutritionEntry(models.Model):
     meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
     is_eaten = models.BooleanField(default=False)
     image_url = models.URLField(null=True, blank=True)
+    ingredients = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.food_name} ({self.meal_type})"

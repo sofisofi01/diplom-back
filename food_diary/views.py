@@ -18,19 +18,32 @@ class FoodSearchView(APIView):
         if not query:
             return Response({'error': 'Параметр q обязателен'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cached_result = CacheService.get_food_search_cache(query)
-        if cached_result:
-            return Response(cached_result)
+        try:
+            cached_result = CacheService.get_food_search_cache(query)
+            if cached_result:
+                return Response(cached_result)
+        except Exception as e:
+            print(f"Cache error: {e}")
         
+        results = []
         try:
             results = self._search_fatsecret(query)
-            CacheService.set_food_search_cache(query, results)
-            return Response(results)
+            if results:
+                try:
+                    CacheService.set_food_search_cache(query, results)
+                except Exception as e:
+                    print(f"Cache set error: {e}")
+                return Response(results)
         except Exception as e:
             print(f"FatSecret error: {e}")
-            # Fallback to Open Food Facts if FatSecret fails
+        
+        # Fallback to Open Food Facts if FatSecret fails or returns no results
+        try:
             results = self._search_openfoodfacts(query)
             return Response(results)
+        except Exception as e:
+            print(f"OpenFoodFacts error: {e}")
+            return Response([])
 
     def _get_fatsecret_token(self):
         client_id = "54512519bd6f4cb782c1fcac2a830b34"

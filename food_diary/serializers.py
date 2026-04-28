@@ -5,13 +5,12 @@ from .models import FoodItem, NutritionPlan, NutritionDay, NutritionEntry
 class FoodItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodItem
-        fields = ('id', 'name', 'calories', 'protein', 'carbs', 'fat', 'serving_size')
-
+        fields = ('id', 'name', 'calories', 'protein', 'carbs', 'fat', 'serving_size', 'meal_type', 'ingredients', 'recipe', 'cooking_time', 'image_url')
 
 class NutritionEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = NutritionEntry
-        fields = ('id', 'food_name', 'calories', 'protein', 'carbs', 'fat', 'meal_type', 'is_eaten', 'image_url')
+        fields = ('id', 'food_name', 'calories', 'protein', 'carbs', 'fat', 'meal_type', 'is_eaten', 'image_url', 'ingredients')
 
 
 class NutritionDaySerializer(serializers.ModelSerializer):
