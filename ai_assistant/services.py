@@ -2,6 +2,10 @@ import requests
 import json
 import uuid
 import os
+import urllib3
+
+# Отключаем предупреждения о небезопасном соединении (для GigaChat API)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class AIAssistantService:
     @staticmethod
@@ -9,8 +13,11 @@ class AIAssistantService:
         """Получение токена авторизации GigaChat"""
         url = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
         
-        # Эти данные должны быть в .env, пока используем заглушку для структуры
-        auth_data = os.getenv('GIGACHAT_CREDENTIALS', 'YOUR_GIGACHAT_CREDENTIALS_BASE64')
+        # Эти данные должны быть в .env
+        auth_data = os.getenv('GIGACHAT_CREDENTIALS')
+        if not auth_data:
+            print("GigaChat Error: GIGACHAT_CREDENTIALS not found in environment")
+            return None
         
         payload = {'scope': 'GIGACHAT_API_PERS'}
         headers = {
@@ -21,11 +28,13 @@ class AIAssistantService:
         }
 
         try:
-            # verify=False так как у Сбера часто самоподписанные сертификаты в API
             response = requests.post(url, headers=headers, data=payload, verify=False)
+            if response.status_code != 200:
+                print(f"GigaChat Auth Error: Status {response.status_code}, Body: {response.text}")
+                return None
             return response.json().get('access_token')
         except Exception as e:
-            print(f"GigaChat Auth Error: {e}")
+            print(f"GigaChat Auth Exception: {e}")
             return None
 
     @staticmethod
