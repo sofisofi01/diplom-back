@@ -91,9 +91,26 @@ class AIAssistantService:
         }
 
         try:
-            response = requests.post(url, headers=headers, data=json.dumps(prompt), verify=False)
-            result = response.json()
+            response = requests.post(url, headers=headers, data=json.dumps(prompt), verify=False, timeout=30)
+            
+            # Логируем для отладки
+            if response.status_code != 200:
+                print(f"GigaChat API Error: Status {response.status_code}, Content: {response.text[:200]}")
+                return AIAssistantService.local_fallback_analysis(user_data)
+            
+            response_text = response.text
+            if not response_text:
+                print("GigaChat API Error: Empty response body")
+                return AIAssistantService.local_fallback_analysis(user_data)
+
+            try:
+                result = response.json()
+            except json.JSONDecodeError as e:
+                print(f"GigaChat API JSON Error: {e}. Body: {response_text[:200]}")
+                return AIAssistantService.local_fallback_analysis(user_data)
+
             content = result['choices'][0]['message']['content']
+
             
             # Пытаемся распарсить JSON из ответа нейросети
             try:
