@@ -72,7 +72,22 @@ class AIAssistantService:
             for work_ex in day.get('exercises', []):
                 ex_data = work_ex.get('exercise', {})
                 ex_name = ex_data.get('name') if isinstance(ex_data, dict) else "Упражнение"
-                day_info["exercises"].append(ex_name)
+                
+                # Добавляем детали: подходы, повторения, вес
+                sets = work_ex.get('sets')
+                reps = work_ex.get('reps')
+                weight = work_ex.get('weight')
+                
+                details = []
+                if sets: details.append(f"{sets} подх.")
+                if reps: details.append(f"{reps} повт.")
+                if weight: details.append(f"{weight} кг")
+                
+                full_ex_name = ex_name
+                if details:
+                    full_ex_name += f" ({', '.join(details)})"
+                
+                day_info["exercises"].append(full_ex_name)
             workouts_summary.append(day_info)
         
         # Формируем максимально компактный, но информативный текстовый контекст
