@@ -53,10 +53,10 @@ class AIAssistantService:
         nutrition_summary = []
         for day in nutrition_raw:
             day_info = {"day": day.get('day_number'), "meals": []}
-            for meal in day.get('meals', []):
+            for entry in day.get('entries', []):
                 day_info["meals"].append({
-                    "name": meal.get('name'),
-                    "calories": meal.get('calories')
+                    "name": entry.get('food_name') or entry.get('name'),
+                    "calories": entry.get('calories')
                 })
             nutrition_summary.append(day_info)
 
@@ -64,20 +64,23 @@ class AIAssistantService:
         workouts_summary = []
         for day in workouts_raw:
             day_info = {"day": day.get('day_number'), "exercises": []}
-            for ex in day.get('exercises', []):
-                day_info["exercises"].append(ex.get('name'))
+            for work_ex in day.get('exercises', []):
+                ex_data = work_ex.get('exercise', {})
+                ex_name = ex_data.get('name') if isinstance(ex_data, dict) else "Упражнение"
+                day_info["exercises"].append(ex_name)
             workouts_summary.append(day_info)
         
-        context = {
-            "profile": {
-                "current": profile.get('current_weight'),
-                "target": profile.get('target_weight'),
-                "goal": profile.get('goal')
-            },
-            "weight_history": weight_history,
-            "nutrition": nutrition_summary,
-            "workouts": workouts_summary
-        }
+        # Формируем максимально компактный, но информативный текстовый контекст
+        context = f"Цель: {profile.get('goal')}. Вес: сейчас {profile.get('current_weight')}, цель {profile.get('target_weight')}.\n"
+        
+        if weight_history:
+            context += f"История веса: {', '.join([str(w.get('weight')) for w in weight_history])}.\n"
+        
+        if nutrition_summary:
+            context += "Питание: " + "; ".join([f"День {d['day']}: {', '.join([m['name'] for m in d['meals']])}" for d in nutrition_summary]) + ".\n"
+            
+        if workouts_summary:
+            context += "Тренировки: " + "; ".join([f"День {d['day']}: {', '.join(d['exercises'])}" for d in workouts_summary]) + "."
 
         if not token:
             # Fallback к локальной логике, если API недоступно
