@@ -41,27 +41,43 @@ class AIAssistantService:
     def analyze_user_data(user_data):
         token = AIAssistantService.get_gigachat_token()
         
+        if not token:
+            return AIAssistantService.local_fallback_analysis(user_data)
+        
         profile = user_data.get('profile', {})
-        nutrition = user_data.get('nutrition', [])
-        workouts = user_data.get('workouts', [])
-        weight_history = user_data.get('weight_history', [])
         
-        # Формируем контекст для нейросети
-        context = f"""
-        User Profile:
-        - Current Weight: {profile.get('current_weight')}kg
-        - Target Weight: {profile.get('target_weight')}kg
-        - Goal: {profile.get('goal')}
+        # Очищаем данные от лишнего веса для API (413 Request Entity Too Large)
+        weight_history = user_data.get('weight_history', [])[:3]
         
-        Weight History (last entries):
-        {json.dumps(weight_history, indent=2)}
+        nutrition_raw = user_data.get('nutrition', [])[:2]
+        nutrition_summary = []
+        for day in nutrition_raw:
+            day_info = {"day": day.get('day_number'), "meals": []}
+            for meal in day.get('meals', []):
+                day_info["meals"].append({
+                    "name": meal.get('name'),
+                    "calories": meal.get('calories')
+                })
+            nutrition_summary.append(day_info)
+
+        workouts_raw = user_data.get('workouts', [])[:2]
+        workouts_summary = []
+        for day in workouts_raw:
+            day_info = {"day": day.get('day_number'), "exercises": []}
+            for ex in day.get('exercises', []):
+                day_info["exercises"].append(ex.get('name'))
+            workouts_summary.append(day_info)
         
-        Nutrition Data (last plan):
-        {json.dumps(nutrition, indent=2)}
-        
-        Workout Data:
-        {json.dumps(workouts, indent=2)}
-        """
+        context = {
+            "profile": {
+                "current": profile.get('current_weight'),
+                "target": profile.get('target_weight'),
+                "goal": profile.get('goal')
+            },
+            "weight_history": weight_history,
+            "nutrition": nutrition_summary,
+            "workouts": workouts_summary
+        }
 
         if not token:
             # Fallback к локальной логике, если API недоступно
@@ -110,11 +126,18 @@ class AIAssistantService:
                 return AIAssistantService.local_fallback_analysis(user_data)
 
             content = result['choices'][0]['message']['content']
-
             
             # Пытаемся распарсить JSON из ответа нейросети
             try:
-                return json.loads(content)
+                # Очищаем ответ от возможных markdown-тегов
+                clean_content = content.strip()
+                if clean_content.startswith("```json"):
+                    clean_content = clean_content[7:]
+                if clean_content.endswith("```"):
+                    clean_content = clean_content[:-3]
+                clean_content = clean_content.strip()
+                
+                return json.loads(clean_content)
             except:
                 # Если нейросеть вернула текст вместо JSON, оборачиваем его
                 return {
