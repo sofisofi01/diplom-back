@@ -55,12 +55,14 @@ class AIAssistantService:
         nutrition_raw = user_data.get('nutrition', [])[:2]
         nutrition_summary = []
         for day in nutrition_raw:
-            day_info = {"day": day.get('day_number'), "meals": []}
+            day_info = {"day": day.get('day_number'), "meals": [], "total_calories": 0}
             for entry in day.get('entries', []):
+                cals = entry.get('calories') or 0
                 day_info["meals"].append({
                     "name": entry.get('food_name') or entry.get('name'),
-                    "calories": entry.get('calories')
+                    "calories": cals
                 })
+                day_info["total_calories"] += cals
             nutrition_summary.append(day_info)
 
         workouts_raw = user_data.get('workouts', [])[:2]
@@ -80,10 +82,28 @@ class AIAssistantService:
             context += f"История веса: {', '.join([str(w.get('weight')) for w in weight_history])}.\n"
         
         if nutrition_summary:
-            context += "Питание: " + "; ".join([f"День {d['day']}: {', '.join([m['name'] for m in d['meals']])}" for d in nutrition_summary]) + ".\n"
+            nutrition_parts = []
+            for d in nutrition_summary:
+                meals_str = ", ".join([f"{m['name']} ({m['calories']} ккал)" for m in d['meals'] if m['name']])
+                if meals_str:
+                    nutrition_parts.append(f"День {d['day']} (всего {d['total_calories']} ккал): {meals_str}")
+            
+            if nutrition_parts:
+                context += "Питание: " + "; ".join(nutrition_parts) + ".\n"
+            else:
+                context += "Данные о приемах пищи отсутствуют.\n"
             
         if workouts_summary:
-            context += "Тренировки: " + "; ".join([f"День {d['day']}: {', '.join(d['exercises'])}" for d in workouts_summary]) + "."
+            workout_parts = []
+            for d in workouts_summary:
+                ex_str = ", ".join([ex for ex in d['exercises'] if ex])
+                if ex_str:
+                    workout_parts.append(f"День {d['day']}: {ex_str}")
+            
+            if workout_parts:
+                context += "Тренировки: " + "; ".join(workout_parts) + "."
+            else:
+                context += "Данные об упражнениях отсутствуют."
         else:
             context += "Данные о тренировках отсутствуют."
 
