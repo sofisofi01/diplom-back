@@ -17,11 +17,11 @@ class AIAnalysisView(APIView):
         
         # Собираем данные о питании
         nutrition_plan = NutritionPlan.objects.filter(user=user, is_active=True).first()
-        nutrition_data = NutritionPlanSerializer(nutrition_plan).data if nutrition_plan else []
+        nutrition_data = NutritionPlanSerializer(nutrition_plan).data if nutrition_plan else {}
         
         # Собираем данные о тренировках
         workout_plan = WorkoutPlan.objects.filter(user=user, is_active=True).first()
-        workout_data = WorkoutPlanSerializer(workout_plan).data if workout_plan else []
+        workout_data = WorkoutPlanSerializer(workout_plan).data if workout_plan else {}
 
         # Собираем историю веса (последние 10 записей)
         weight_entries = WeightEntry.objects.filter(user=user).order_by('-date')[:10]
@@ -33,8 +33,8 @@ class AIAnalysisView(APIView):
                 'target_weight': getattr(user.profile, 'target_weight', None),
                 'goal': getattr(user.profile, 'goal', None),
             },
-            'nutrition': nutrition_data.get('days', []) if isinstance(nutrition_data, dict) else [],
-            'workouts': workout_data.get('days', []) if isinstance(workout_data, dict) else [],
+            'nutrition': nutrition_data.get('days', []),
+            'workouts': workout_data.get('days', []),
             'weight_history': weight_history
         }
         
