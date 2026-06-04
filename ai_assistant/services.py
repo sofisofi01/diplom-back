@@ -47,7 +47,7 @@ class AIAssistantService:
         profile = user_data.get('profile', {})
         
         # Логируем количество полученных данных
-        print(f"AI Analysis Debug: Nutrition days: {len(user_data.get('nutrition', []))}, Workout days: {len(user_data.get('workouts', []))}")
+        print(f"AI Analysis Debug: Nutrition days: {len(user_data.get('nutrition', []))}, Workout days: {len(user_data.get('workouts', []))}", flush=True)
         
         # Очищаем данные от лишнего веса для API (413 Request Entity Too Large)
         weight_history = user_data.get('weight_history', [])[:3]
@@ -87,7 +87,7 @@ class AIAssistantService:
         else:
             context += "Данные о тренировках отсутствуют."
 
-        print(f"AI Analysis Debug: Context sent to GigaChat: {context}")
+        print(f"AI Analysis Debug: Context sent to GigaChat: {context}", flush=True)
 
         if not token:
             # Fallback к локальной логике, если API недоступно

@@ -30,6 +30,8 @@ services:
   web:
     build: .
     command: uvicorn wellness_backend.asgi:application --host 0.0.0.0 --port 8000 --workers 4
+    environment:
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env
     volumes:
