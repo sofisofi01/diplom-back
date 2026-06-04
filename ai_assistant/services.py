@@ -52,10 +52,10 @@ class AIAssistantService:
         # Очищаем данные от лишнего веса для API (413 Request Entity Too Large)
         weight_history = user_data.get('weight_history', [])[:3]
         
-        nutrition_raw = user_data.get('nutrition', [])[:2]
+        nutrition_raw = user_data.get('nutrition', [])
         nutrition_summary = []
         for day in nutrition_raw:
-            day_info = {"day": day.get('day_number'), "meals": [], "total_calories": 0}
+            day_info = {"day": day.get('day_number'), "name": day.get('name', ''), "meals": [], "total_calories": 0}
             for entry in day.get('entries', []):
                 cals = entry.get('calories') or 0
                 day_info["meals"].append({
@@ -63,32 +63,44 @@ class AIAssistantService:
                     "calories": cals
                 })
                 day_info["total_calories"] += cals
-            nutrition_summary.append(day_info)
+            
+            if day_info["meals"]: # Добавляем только если есть еда
+                nutrition_summary.append(day_info)
+        
+        nutrition_summary = nutrition_summary[:5]
 
-        workouts_raw = user_data.get('workouts', [])[:2]
+        # Берем все доступные дни, но фильтруем только те, где есть упражнения
+        workouts_raw = user_data.get('workouts', [])
         workouts_summary = []
         for day in workouts_raw:
-            day_info = {"day": day.get('day_number'), "exercises": []}
+            exercises = []
             for work_ex in day.get('exercises', []):
                 ex_data = work_ex.get('exercise', {})
                 ex_name = ex_data.get('name') if isinstance(ex_data, dict) else "Упражнение"
                 
-                # Добавляем детали: подходы, повторения, вес
                 sets = work_ex.get('sets')
                 reps = work_ex.get('reps')
                 weight = work_ex.get('weight')
                 
                 details = []
-                if sets: details.append(f"{sets} подх.")
-                if reps: details.append(f"{reps} повт.")
-                if weight: details.append(f"{weight} кг")
+                if sets: details.append(f"{sets}х")
+                if reps: details.append(f"{reps}")
+                if weight: details.append(f"{weight}кг")
                 
                 full_ex_name = ex_name
                 if details:
-                    full_ex_name += f" ({', '.join(details)})"
-                
-                day_info["exercises"].append(full_ex_name)
-            workouts_summary.append(day_info)
+                    full_ex_name += f" ({''.join(details)})"
+                exercises.append(full_ex_name)
+            
+            if exercises: # Добавляем день только если в нем есть упражнения
+                workouts_summary.append({
+                    "day": day.get('day_number'),
+                    "name": day.get('name', ''),
+                    "exercises": exercises
+                })
+        
+        # Ограничиваем количество дней до 5 самых актуальных, если их слишком много
+        workouts_summary = workouts_summary[:5]
         
         # Формируем максимально компактный, но информативный текстовый контекст
         context = f"Цель: {profile.get('goal')}. Вес: сейчас {profile.get('current_weight')}, цель {profile.get('target_weight')}.\n"
@@ -100,27 +112,27 @@ class AIAssistantService:
             nutrition_parts = []
             for d in nutrition_summary:
                 meals_str = ", ".join([f"{m['name']} ({m['calories']} ккал)" for m in d['meals'] if m['name']])
-                if meals_str:
-                    nutrition_parts.append(f"День {d['day']} (всего {d['total_calories']} ккал): {meals_str}")
+                day_label = f"День {d['day']}"
+                if d.get('name'):
+                    day_label += f" ({d['name']})"
+                nutrition_parts.append(f"{day_label} (всего {d['total_calories']} ккал): {meals_str}")
             
-            if nutrition_parts:
-                context += "Питание: " + "; ".join(nutrition_parts) + ".\n"
-            else:
-                context += "Данные о приемах пищи отсутствуют.\n"
+            context += "Питание: " + "; ".join(nutrition_parts) + ".\n"
+        else:
+            context += "Данные о приемах пищи отсутствуют.\n"
             
         if workouts_summary:
             workout_parts = []
             for d in workouts_summary:
-                ex_str = ", ".join([ex for ex in d['exercises'] if ex])
-                if ex_str:
-                    workout_parts.append(f"День {d['day']}: {ex_str}")
+                ex_str = ", ".join(d['exercises'])
+                day_label = f"День {d['day']}"
+                if d.get('name'):
+                    day_label += f" ({d['name']})"
+                workout_parts.append(f"{day_label}: {ex_str}")
             
-            if workout_parts:
-                context += "Тренировки: " + "; ".join(workout_parts) + "."
-            else:
-                context += "Данные об упражнениях отсутствуют."
+            context += "Тренировки: " + "; ".join(workout_parts) + "."
         else:
-            context += "Данные о тренировках отсутствуют."
+            context += "Данные об упражнениях отсутствуют."
 
         print(f"AI Analysis Debug: Context sent to GigaChat: {context}", flush=True)
 
