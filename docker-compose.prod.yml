@@ -7,6 +7,8 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wellness_network
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
@@ -16,6 +18,8 @@ services:
 
   redis:
     image: redis:7
+    networks:
+      - wellness_network
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -31,6 +35,8 @@ services:
     volumes:
       - staticfiles:/app/staticfiles
       - media:/app/media
+    networks:
+      - wellness_network
     restart: always
     depends_on:
       db:
@@ -50,6 +56,8 @@ services:
       - media:/app/media
       - ./certbot_conf:/etc/letsencrypt
       - ./certbot_www:/var/www/certbot
+    networks:
+      - wellness_network
     depends_on:
       - web
       - frontend
@@ -57,6 +65,8 @@ services:
 
   frontend:
     image: ${IMAGE_FRONTEND:-sofisofi01/aegle-frontend:latest}
+    networks:
+      - wellness_network
     restart: always
 
   certbot:
@@ -64,7 +74,13 @@ services:
     volumes:
       - ./certbot_conf:/etc/letsencrypt
       - ./certbot_www:/var/www/certbot
+    networks:
+      - wellness_network
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
+
+networks:
+  wellness_network:
+    driver: bridge
 
 volumes:
   postgres_data:
