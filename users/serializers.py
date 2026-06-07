@@ -7,7 +7,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     height = serializers.FloatField(required=False)
     weight = serializers.FloatField(required=False)
-    gender = serializers.ChoiceField(choices=['male', 'female'], required=False)
+    gender = serializers.ChoiceField(choices=['M', 'F'], required=False)
     age = serializers.IntegerField(required=False, min_value=1, max_value=120)
 
     class Meta:
